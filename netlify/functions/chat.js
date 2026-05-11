@@ -8,26 +8,26 @@ KEY FACTS about Gowtham:
 - Contact: WhatsApp +91 96779 64825, Email: gowthamofficial077@gmail.com, LinkedIn: linkedin.com/in/gowtham-s-299b07299
 
 SERVICES & PRICING:
-- Landing page: ₹3,000–₹8,000 (3–5 days)
-- Business website (5–8 pages): ₹8,000–₹18,000 (7–12 days)
-- UI/UX Design (Figma): ₹5,000–₹20,000 (5–10 days)
-- E-commerce site: ₹18,000–₹50,000 (15–25 days)
-- Web application (fullstack): ₹25,000–₹1,00,000
-- Monthly maintenance: ₹2,000–₹5,000/month
+- Landing page: Rs.3,000 to Rs.8,000 (3-5 days)
+- Business website 5-8 pages: Rs.8,000 to Rs.18,000 (7-12 days)
+- UI/UX Design Figma: Rs.5,000 to Rs.20,000 (5-10 days)
+- E-commerce site: Rs.18,000 to Rs.50,000 (15-25 days)
+- Web application fullstack: Rs.25,000 to Rs.1,00,000
+- Monthly maintenance: Rs.2,000 to Rs.5,000 per month
 
 WORK PROCESS:
-1. Discovery call / WhatsApp chat
+1. Discovery call or WhatsApp chat
 2. Written proposal with scope, price, timeline
 3. 50% advance payment to start
 4. Weekly progress updates
-5. Final delivery → 50% balance → file handover
+5. Final delivery then 50% balance then file handover
 
 RULES:
-- Keep answers short and friendly (2–4 sentences max)
+- Keep answers short and friendly, 2 to 4 sentences max
 - Always end with a CTA to WhatsApp: wa.me/919677964825
 - If asked to hire or contact, give WhatsApp number directly
 - Speak in a professional but warm tone
-- If asked something you don't know, say "For more details, WhatsApp Gowtham directly at +91 96779 64825"`;
+- If asked something you don't know, say: For more details WhatsApp Gowtham directly at +91 96779 64825`;
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -48,26 +48,36 @@ exports.handler = async function (event) {
 
   try {
     const { messages } = JSON.parse(event.body);
+    const apiKey = process.env.GEMINI_API_KEY;
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 300,
-        system: SYSTEM_PROMPT,
-        messages: messages,
-      }),
-    });
+    // Convert chat history to Gemini format
+    const geminiContents = messages.map((msg) => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }],
+    }));
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: {
+            parts: [{ text: SYSTEM_PROMPT }],
+          },
+          contents: geminiContents,
+          generationConfig: {
+            maxOutputTokens: 300,
+            temperature: 0.7,
+          },
+        }),
+      }
+    );
 
     const data = await response.json();
     const reply =
-      data.content?.[0]?.text ||
-      "For more details, WhatsApp Gowtham at +91 96779 64825 😊";
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "For more details, WhatsApp Gowtham at +91 96779 64825!";
 
     return {
       statusCode: 200,
@@ -83,7 +93,7 @@ exports.handler = async function (event) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         reply:
-          "Having a small issue right now. Please WhatsApp Gowtham at +91 96779 64825 — he replies fast! 🚀",
+          "Having a small issue right now. Please WhatsApp Gowtham at +91 96779 64825 he replies fast!",
       }),
     };
   }
