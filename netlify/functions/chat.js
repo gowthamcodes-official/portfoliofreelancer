@@ -1,4 +1,4 @@
-const SYSTEM_PROMPT = `You are Gowtham S's friendly portfolio assistant. Gowtham is a Fullstack Developer and UI/UX Designer based in Tamil Nadu, India.
+ const SYSTEM_PROMPT = `You are Gowtham S's friendly portfolio assistant. Gowtham is a Fullstack Developer and UI/UX Designer based in Tamil Nadu, India.
 
 KEY FACTS about Gowtham:
 - Skills: MERN Stack (MongoDB, Express, React, Node.js), Java Fullstack (Spring Boot, MySQL, Hibernate), UI/UX Design (Figma, wireframing, prototyping)
@@ -27,9 +27,13 @@ RULES:
 - Always end with a CTA to WhatsApp: wa.me/919677964825
 - If asked to hire or contact, give WhatsApp number directly
 - Speak in a professional but warm tone
-- If asked something you don't know, say: For more details WhatsApp Gowtham directly at +91 96779 64825`;
+- If asked something you don't know, say:
+  "For more details WhatsApp Gowtham directly at +91 96779 64825"
+`;
 
 exports.handler = async function (event) {
+
+  // CORS
   if (event.httpMethod === "OPTIONS") {
     return {
       statusCode: 200,
@@ -42,30 +46,50 @@ exports.handler = async function (event) {
     };
   }
 
+  // Only POST allowed
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+    return {
+      statusCode: 405,
+      body: "Method Not Allowed",
+    };
   }
 
   try {
+
     const { messages } = JSON.parse(event.body);
+
     const apiKey = process.env.GEMINI_API_KEY;
 
-    // Convert chat history to Gemini format
+    // Convert messages to Gemini format
     const geminiContents = messages.map((msg) => ({
       role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }],
+      parts: [
+        {
+          text: msg.content,
+        },
+      ],
     }));
 
+    // Gemini API Request
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
+
         body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: SYSTEM_PROMPT }],
+          systemInstruction: {
+            parts: [
+              {
+                text: SYSTEM_PROMPT,
+              },
+            ],
           },
+
           contents: geminiContents,
+
           generationConfig: {
             maxOutputTokens: 300,
             temperature: 0.7,
@@ -75,25 +99,41 @@ exports.handler = async function (event) {
     );
 
     const data = await response.json();
+
+    console.log(JSON.stringify(data));
+
     const reply =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
       "For more details, WhatsApp Gowtham at +91 96779 64825!";
 
     return {
       statusCode: 200,
+
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
       },
-      body: JSON.stringify({ reply }),
+
+      body: JSON.stringify({
+        reply,
+      }),
     };
+
   } catch (err) {
+
+    console.log(err);
+
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
+
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+
       body: JSON.stringify({
         reply:
-          "Having a small issue right now. Please WhatsApp Gowtham at +91 96779 64825 he replies fast!",
+          "Having a small issue right now. Please WhatsApp Gowtham at +91 96779 64825 — he replies fast! 🚀",
       }),
     };
   }
