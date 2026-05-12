@@ -27,7 +27,7 @@ RULES:
 - Always end with a CTA to WhatsApp: wa.me/919677964825
 - If asked to hire or contact, give WhatsApp number directly
 - Speak in a professional but warm tone
-- If asked something you don't know, say: For more details WhatsApp Gowtham directly at +91 96779 64825`;
+- If asked something you don't know say: For more details WhatsApp Gowtham directly at +91 96779 64825`;
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -49,6 +49,22 @@ exports.handler = async function (event) {
   try {
     const { messages } = JSON.parse(event.body);
     const apiKey = process.env.GEMINI_API_KEY;
+
+    console.log("API Key exists:", !!apiKey);
+    console.log("Messages count:", messages.length);
+
+    if (!apiKey) {
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: JSON.stringify({
+          reply: "API key missing! Please WhatsApp Gowtham at +91 96779 64825",
+        }),
+      };
+    }
 
     const geminiContents = messages.map((msg) => ({
       role: msg.role === "assistant" ? "model" : "user",
@@ -74,6 +90,9 @@ exports.handler = async function (event) {
     );
 
     const data = await response.json();
+    console.log("Gemini response status:", response.status);
+    console.log("Gemini data:", JSON.stringify(data).slice(0, 200));
+
     const reply =
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
       "For more details, WhatsApp Gowtham at +91 96779 64825!";
@@ -87,12 +106,12 @@ exports.handler = async function (event) {
       body: JSON.stringify({ reply }),
     };
   } catch (err) {
+    console.log("Error:", err.message);
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        reply:
-          "Having a small issue right now. Please WhatsApp Gowtham at +91 96779 64825 he replies fast!",
+        reply: "Having a small issue. Please WhatsApp Gowtham at +91 96779 64825!",
       }),
     };
   }
