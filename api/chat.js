@@ -20,7 +20,7 @@ RULES:
 - Always end with WhatsApp CTA: +91 96779 64825
 - Professional but warm tone`;
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
